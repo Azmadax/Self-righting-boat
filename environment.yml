@@ -1,10 +1,11 @@
-name: ailedeau
+name: self-righting-boa
+
 channels:
   - conda-forge
 dependencies:
   - poetry=1.8.2
-  - python=3.12.3
-prefix: /home/perso/conda/envs/ailedeau
+  - python=3.10
+prefix: /home/perso/conda/envs/self-righting-boat
 
 # Non-standard section listing target platforms for conda-lock:
 platforms:

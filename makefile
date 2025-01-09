@@ -37,21 +37,4 @@ setup-env: install-micromamba ## Create copy of environment
 install-poetry: ## Be sure to activate env
 	poetry install --no-root
 
-install-uv: ## Install uv (Python virtual environment manager)
-	@if [ ! -x "$(UV_BIN)" ]; then \
-		echo "uv not found, installing..."; \
-		curl -Ls https://raw.githubusercontent.com/direnv/uv/main/install.sh | bash -s -- -b $(HOME)/.local/bin; \
-	else \
-		echo "uv is already installed."; \
-	fi
-	@echo "Adding uv to PATH for subsequent commands."
-
-init-uv: install-uv ## Initialize virtual environment using uv (ignoring workspace)
-	@$(PATH_ADDITION) $(UV_BIN) init --no-workspace $(PROJECT) && \
-		echo "Virtual environment initialized for project $(PROJECT) without workspace."
-
-sync-dependencies: ## Sync dependencies between [tool.poetry.dependencies] and [project] sections in pyproject.toml
-	@echo "Syncing dependencies..."
-	python3 sync_dependencies.py
-	@echo "Dependencies synced successfully!"
 
