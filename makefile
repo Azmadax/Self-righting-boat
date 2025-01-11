@@ -3,7 +3,6 @@
 
 PROJECT = self-righting-boat
 MICROMAMBA_BIN = $(HOME)/.local/bin/micromamba
-UV_BIN = $(HOME)/.local/bin/uv
 PATH_ADDITION = export PATH=$(HOME)/.local/bin:$$PATH;
 
 help: ## Show available targets
