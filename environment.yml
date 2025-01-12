@@ -3,7 +3,7 @@ name: self-righting-boa
 channels:
   - conda-forge
 dependencies:
-  - poetry=1.8.2
+  - poetry=2.0.0
   - python=3.10
 prefix: /home/perso/conda/envs/self-righting-boat
 
