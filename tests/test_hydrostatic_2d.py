@@ -1,8 +1,91 @@
 import numpy as np
 from scipy.optimize import bisect
+
 from hydrostatic_2d import (
+    computed_submerged_points,
     compute_submerged_area_and_centroid,
 )
+
+
+def test_no_points_below_zero():
+    """Test when there are no points below y=0."""
+    curve_points = [[-1, 1], [0, 2], [1, 3], [2, 4]]
+    x, y = computed_submerged_points(curve_points)
+    assert np.all(y <= 0)
+    assert len(x) == 0
+    assert len(y) == 0
+
+
+def test_all_points_below_zero():
+    """Test when all points are below y=0."""
+    curve_points = [[-2, -1], [0, -2], [2, -3], [3, -1]]
+    x, y = computed_submerged_points(curve_points)
+    assert np.all(y <= 0)
+    assert len(x) == len(curve_points)  # All points should be below y=0
+    assert np.array_equal(y, np.array([-1, -2, -3, -1]))
+
+
+def test_curve_crossing_zero_once():
+    """Test when the curve crosses y=0 exactly once."""
+    curve_points = [[-2, -1], [0, 0], [2, 1]]
+    x, y = computed_submerged_points(curve_points)
+    assert np.all(y <= 0)
+    assert len(x) == 2  # There should be one point exactly on y=0
+    assert np.array_equal(x, np.array([-2, 0]))  # x-coordinates of submerged points
+    assert np.array_equal(y, np.array([-1, 0]))  # y-coordinates of submerged points
+
+
+def test_curve_crossing_zero_multiple_times():
+    """Test when the curve crosses y=0 multiple times."""
+    curve_points = [[-2, -2], [0, 2], [2, -2], [3, -1], [5, 1]]
+    x, y = computed_submerged_points(curve_points)
+    assert np.all(y <= 0)
+    assert len(x) == 6  # Points below y=0 should be found
+    assert np.array_equal(
+        x, np.array([-2, -1, 1, 2, 3, 4])
+    )  # X-coordinates of submerged points
+    assert np.array_equal(
+        y, np.array([-2, 0, 0, -2, -1, 0])
+    )  # Y-coordinates of submerged points
+
+
+def test_curve_no_intersection_with_zero():
+    """Test when the curve does not intersect with y=0."""
+    curve_points = [[-2, 1], [0, 2], [2, 3], [3, 4]]
+    x, y = computed_submerged_points(curve_points)
+    assert np.all(y <= 0)
+    assert len(x) == 0
+    assert len(y) == 0
+
+
+def test_empty_input():
+    """Test when the input list is empty."""
+    curve_points = []
+    x, y = computed_submerged_points(curve_points)
+    assert np.all(y <= 0)
+    assert len(x) == 0
+    assert len(y) == 0
+
+
+def test_single_point_on_zero():
+    """Test when there is exactly one point on y=0."""
+    curve_points = [[0, 0]]
+    x, y = computed_submerged_points(curve_points)
+    assert np.all(y <= 0)
+    assert len(x) == 1
+    assert len(y) == 1
+
+
+def test_points_on_y_zero_and_below():
+    """Test when points are on y=0 and some below y=0."""
+    curve_points = [[-1, 0], [0, -1], [1, 1], [2, -1]]
+    x, y = computed_submerged_points(curve_points)
+    assert np.all(y <= 0)
+    assert len(x) == 5  # 0 is not considered submerged
+    assert np.array_equal(
+        x, np.array([-1, 0, 0.5, 1.5, 2])
+    )  # Submerged points (includes points below)
+    assert np.array_equal(y, np.array([0, -1, 0, 0, -1]))  # Correct y values below zero
 
 
 # Test for curve above y=0 (no submerged area)
@@ -86,7 +169,9 @@ def test_empty_curve():
     curve_points_empty = []
     area, cx, cy = compute_submerged_area_and_centroid(curve_points_empty)
     assert area == 0, f"Expected area = 0, but got {area}"
-    assert cx == 0 and cy == 0, f"Expected centroid at (0, 0), but got ({cx}, {cy})"
+    assert np.isnan(cx) and np.isnan(cy), (
+        f"Expected centroid at (0, 0), but got ({cx}, {cy})"
+    )
 
 
 # Test for simple curve for which results where visually checked

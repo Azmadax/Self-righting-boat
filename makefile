@@ -43,6 +43,9 @@ install-uv: ## Install uv project and packages manager
 	fi; \
 	echo "uv installation/update complete."
 
+demo: ## Launch demo scripts
+	uv run hydrostatic_2d_example.py
+
 format: ## Format code consistently
 	ruff format
 

@@ -30,7 +30,7 @@ To install the required dependencies, follow the steps below:
 
 To launch an example, run the following command from root of repository:  
 ```bash
-uv run hydrostatic_2d.py
+uv run hydrostatic_2d_example.py
 ```
 
 ## Test
