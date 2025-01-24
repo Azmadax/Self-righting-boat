@@ -27,7 +27,7 @@ endif
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-install-uv:
+install-uv: ## Install uv project and packages manager
 	@echo " ⏺ Checking uv installation..."
 	@current_version=$$(if command -v uv >/dev/null 2>&1; then uv --version 2>/dev/null || echo "not_installed"; else echo "not_installed"; fi); \
 	echo "UV version: $$current_version"; \
@@ -42,6 +42,23 @@ install-uv:
 		$(INSTALL_CMD); \
 	fi; \
 	echo "uv installation/update complete."
+
+format: ## Format code consistently
+	black .
+
+lint: ## Clean code or warn user
+	black .
+	ruff check . --fix
+
+test: ## Launch test
+	pytest tests
+
+coverage: ## Launch coverage test
+	coverage run -m pytest tests
+	coverage html --omit="*/test*"
+
+
+
 
 
 
