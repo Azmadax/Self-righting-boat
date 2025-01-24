@@ -73,10 +73,15 @@ Geometry supported
 This project was initiated as part of the Ocean Options program at **École Centrale Nantes**. It was proposed by the **International Kiteboat Federation France (IKIFF)** [kiteboat.org], with the goal of improving the safety of kiteboats.
 
 ### Project Team:
+Students:
 - **Nicolas Fihey**  
 - **Lucas Vieillefond**  
 - **Thimothée Leroy**  
-- Guidance by: **Baptiste Labat**
+
+Advisers: 
+- **Baptiste Labat**
+[![LinkedIn](https://img.shields.io/badge/-LinkedIn-blue?logo=linkedin&logoWidth=20&style=flat-square)](https://www.linkedin.com/in/baptiste-labat-01751138/)
+[![GitHub](https://img.shields.io/badge/-GitHub-black?logo=github&logoWidth=20&style=flat-square)](https://github.com/baptistelabat)
 
 ---
 
@@ -104,4 +109,4 @@ This project is licensed under the Mozilla Public License 2.0 - see the [LICENSE
 ## 🖇️ References
 
 - [International Kiteboat Federation France (IKIFF)](https://kiteboat.org)  
-- (Include additional relevant references or resources)
+- [Option Ocean at Centrale Nantes](https://www.ec-nantes.fr/formation/les-options-de-2e-et-3e-annee/option-ocean)
