@@ -66,6 +66,10 @@ Alternatively, if you have make install, just run:
 
 ---
 
+## 📜 Documentation
+Documentation is available at:
+https://self-righting-boat.readthedocs.io/en/latest/
+
 ## 🛠️ Development Roadmap
 
 The project was started in November 2024 and is still at an early stage.  
