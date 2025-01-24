@@ -15,12 +15,18 @@ This project aims to address these challenges and contribute to the safety and r
 ---
 
 ## 🛠️ Installation
+You can download the code directly from GitHub or using git:
+
+```bash
+git clone git@github.com:Azmadax/self-righting-boat.git
+```
 
 To install the required dependencies, follow the steps below:
 
 1. Install `uv` by following the official [installation guide](https://docs.astral.sh/uv/getting-started/installation).
 2. Alternatively, run the command from root of repository:  
    ```bash
+   cd self-righting-boat
    make install-uv
    ```
 
@@ -30,10 +36,21 @@ To install the required dependencies, follow the steps below:
 
 To launch an example, run the following command from root of repository:  
 ```bash
+uv sync --package hydrostatic
 uv run hydrostatic_2d_example.py
+```
+Alternatively, if you have make install, just run:
+```bash
+make demo
 ```
 
 ## Test
+To launch the complete suite of tests, launch the following command:
+```bash
+uv sync --package hydrostatic
+uv run pytest package/hydrostatic/tests
+```
+Alternatively, if you have make install, just run:
    ```bash
    make test
    ```
@@ -51,17 +68,22 @@ uv run hydrostatic_2d_example.py
 
 ## 🛠️ Development Roadmap
 
-Features
+The project was started in November 2024 and is still at an early stage.  
+The optimization is expected to be ready by March 2025, at the end of the student project.  
+The developments might be continued afterward.
+
+Features:
 - [x] Center of buoyancy computation
 - [x] Vertical equilibrium
-- [ ] Placement of center of gravity
-- [ ] Righting arm (GZ) curve computation
+- [x] Placement of center of gravity
+- [ ] Righting arm (GZ) computation
+- [ ] GZ curve computation
 - [ ] Research of equilibrium points
-- [ ] Metacentric height computation at equilibrium points using flotation
+- [ ] Metacentric height computation at equilibrium points using waterplane
 - [ ] Optimized additional low density static superstructure to enable self-righting
 - [ ] Optimized high density static keel to enable self-righting 
 
-Geometry supported
+Supported geometries:
 - [x] single 2D convex polygon
 - [ ] multiple 2D convex polygons
 - [ ] 2D convex polygons with closed holes (free surface effect)
@@ -70,7 +92,8 @@ Geometry supported
 
 ## 📚 Credits
 
-This project was initiated as part of the Ocean Options program at **École Centrale Nantes**. It was proposed by the **International Kiteboat Federation France (IKIFF)** [kiteboat.org], with the goal of improving the safety of kiteboats.
+This project was initiated as part of the Ocean Options program at **École Centrale Nantes**.
+It was proposed by the **International Kiteboat Federation France (IKIFF)** [kiteboat.org], with the goal of improving the safety of kiteboats.
 
 ### Project Team:
 Students:
@@ -89,14 +112,14 @@ Advisers:
 
 Contributions are welcome! Please open an issue or submit a pull request to suggest changes, report bugs, or propose new features.
 
-Here are a few code guidelines:
-We use english for code and comments.
-We use google style docstring.
-We use type hinting.
+Here are a few code guidelines:  
+- We use english for code and comments.
+- We use google style docstring.
+- We use type hinting.  
 Please be sure to install the pre-commit tool in order to check your code while commiting in order to keep a clean project history.
-   ```bash
+```bash
 pre-commit install
-   ```
+```
 Please have a look to makefile to find helpful commands.
 
 ## 📜 License
