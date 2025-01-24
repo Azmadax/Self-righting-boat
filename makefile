@@ -44,10 +44,10 @@ install-uv: ## Install uv project and packages manager
 	echo "uv installation/update complete."
 
 format: ## Format code consistently
-	black .
+	ruff format
 
 lint: ## Clean code or warn user
-	black .
+	ruff format
 	ruff check . --fix
 
 test: ## Launch test

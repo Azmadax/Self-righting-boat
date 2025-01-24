@@ -62,15 +62,15 @@ def test_bisection_method():
 
     draft_offset_min, draft_offset_max = -5.0, 5.0
     draft_offset_equilibrium = bisect(area_diff, draft_offset_min, draft_offset_max)
-    assert (
-        draft_offset_equilibrium is not None
-    ), "Bisection failed to find equilibrium offset"
+    assert draft_offset_equilibrium is not None, (
+        "Bisection failed to find equilibrium offset"
+    )
 
     shifted_points = [[p[0], p[1] - draft_offset_equilibrium] for p in curve_points]
     area, cx, cy = compute_submerged_area_and_centroid(shifted_points)
-    assert np.isclose(
-        area, target_area, atol=0.1
-    ), f"Expected area ≈ {target_area}, but got {area}"
+    assert np.isclose(area, target_area, atol=0.1), (
+        f"Expected area ≈ {target_area}, but got {area}"
+    )
 
 
 # Test for edge case: Single point curve
