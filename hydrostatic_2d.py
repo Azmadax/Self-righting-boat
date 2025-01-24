@@ -3,7 +3,6 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 from geomdl import NURBS
-from geomdl.visualization import VisMPL
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import bisect
@@ -19,7 +18,7 @@ curve.ctrlpts = [
     [3.0, -2.0],
     [1.0, -2.0],
     [-1.0, 0.0],  # Close the curve by duplicating the starting control point
-    [0.0, 2.0]
+    [0.0, 2.0],
 ]
 curve.knotvector = [0, 0, 0, 0, 1, 2, 3, 4, 4, 4, 4]  # Closed curve knot vector
 curve.delta = 0.01  # Set resolution for sampling
@@ -28,7 +27,9 @@ curve.delta = 0.01  # Set resolution for sampling
 curve_points = curve.evalpts
 
 
-def computed_submerged_points(curve_points: List[List[float]]) -> Tuple[np.ndarray, np.ndarray]:
+def computed_submerged_points(
+    curve_points: List[List[float]],
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Compute the submerged points below y=0 of a closed NURBS curve.
 
@@ -65,7 +66,9 @@ def computed_submerged_points(curve_points: List[List[float]]) -> Tuple[np.ndarr
         return x, y
 
 
-def compute_area_and_centroid(x: np.ndarray, y: np.ndarray) -> Tuple[float, float, float]:
+def compute_area_and_centroid(
+    x: np.ndarray, y: np.ndarray
+) -> Tuple[float, float, float]:
     """
     Compute the submerged area and centroid using the shoelace formula.
 
@@ -80,12 +83,18 @@ def compute_area_and_centroid(x: np.ndarray, y: np.ndarray) -> Tuple[float, floa
         return 0, 0, 0
     else:
         area = 0.5 * np.sum(x[:-1] * y[1:] - x[1:] * y[:-1])
-        cx = (1 / (6 * area)) * np.sum((x[:-1] + x[1:]) * (x[:-1] * y[1:] - x[1:] * y[:-1]))
-        cy = (1 / (6 * area)) * np.sum((y[:-1] + y[1:]) * (x[:-1] * y[1:] - x[1:] * y[:-1]))
+        cx = (1 / (6 * area)) * np.sum(
+            (x[:-1] + x[1:]) * (x[:-1] * y[1:] - x[1:] * y[:-1])
+        )
+        cy = (1 / (6 * area)) * np.sum(
+            (y[:-1] + y[1:]) * (x[:-1] * y[1:] - x[1:] * y[:-1])
+        )
         return abs(area), cx, cy
 
 
-def compute_submerged_area_and_centroid(curve_points: List[List[float]]) -> Tuple[float, float, float]:
+def compute_submerged_area_and_centroid(
+    curve_points: List[List[float]],
+) -> Tuple[float, float, float]:
     """
     Compute the submerged area and centroid for a given curve below y=0.
 
@@ -121,7 +130,9 @@ def area_difference(draft_offset: float, curve_points: List[List[float]]) -> flo
 # Step 2: Set the target area and find draft_offset using bisection
 target_area = 6.0  # Set the desired submerged area
 draft_offset_min, draft_offset_max = -5.0, 5.0  # Adjust bounds as needed
-draft_offset_equilibrium = bisect(area_difference, draft_offset_min, draft_offset_max, args=(curve_points,))
+draft_offset_equilibrium = bisect(
+    area_difference, draft_offset_min, draft_offset_max, args=(curve_points,)
+)
 
 # Apply the found draft_offset to compute the submerged area and centroid
 shifted_points = [[p[0], p[1] - draft_offset_equilibrium] for p in curve_points]
@@ -137,8 +148,8 @@ curve_x, curve_y = zip(*shifted_points)
 plt.plot(curve_x, curve_y, label="Closed NURBS Curve")
 
 plt.plot(cx, cy, marker="o", label="Centroid")
-plt.fill(x, y, color='blue', alpha=0.3, label="Submerged Region")
-plt.axhline(0, color='red', linestyle='--', label="y=0 Line")
+plt.fill(x, y, color="blue", alpha=0.3, label="Submerged Region")
+plt.axhline(0, color="red", linestyle="--", label="y=0 Line")
 plt.legend()
 plt.xlabel("X")
 plt.ylabel("Y")
