@@ -1,7 +1,12 @@
 import numpy as np
 from scipy.optimize import bisect
 
-from hydrostatic import computed_submerged_points, compute_submerged_area_and_centroid
+from hydrostatic import (
+    computed_submerged_points,
+    compute_submerged_area_and_centroid,
+    find_draft_offset_at_vertical_equilibrium,
+    close_curve,
+)
 
 
 def test_no_points_below_zero():
@@ -88,7 +93,7 @@ def test_points_on_y_zero_and_below():
 # Test for curve above y=0 (no submerged area)
 def test_curve_above_y0():
     curve_points_above = [[0.0, 2.0], [2.0, 3.0], [4.0, 2.0], [3.0, 4.0]]
-    area, cx, cy = compute_submerged_area_and_centroid(curve_points_above)
+    area, cx, cy = compute_submerged_area_and_centroid(close_curve(curve_points_above))
     assert area == 0, f"Expected area = 0, but got {area}"
 
 
@@ -96,30 +101,30 @@ def test_curve_above_y0():
 def test_curve_below_y0():
     curve_points_submerged = [
         [0.0, -2.0],
-        [2.0, -3.0],
-        [4.0, -2.0],
-        [3.0, -4.0],
-        [1.0, -4.0],
-        [-1.0, -2.0],
-        [0.0, -2.0],
+        [1.0, -2.0],
+        [1.0, -3.0],
+        [0.0, -3.0],
     ]
-    area, cx, cy = compute_submerged_area_and_centroid(curve_points_submerged)
+    area, cx, cy = compute_submerged_area_and_centroid(
+        close_curve(curve_points_submerged)
+    )
     assert area > 0, f"Expected positive area, but got {area}"
+    assert area == 1
 
 
 # Test for curve with multiple intersections with y=0
 def test_curve_intersects_y0():
     curve_points_intersect = [
         [0.0, 2.0],
-        [1.0, 1.0],
-        [2.0, 0.0],
-        [3.0, -1.0],
-        [4.0, -2.0],
-        [5.0, -1.0],
-        [6.0, 0.0],
+        [2.0, 2.0],
+        [2.0, -1.0],
+        [0.0, -1.0],
     ]
-    area, cx, cy = compute_submerged_area_and_centroid(curve_points_intersect)
+    area, cx, cy = compute_submerged_area_and_centroid(
+        close_curve(curve_points_intersect)
+    )
     assert area > 0, f"Expected positive area, but got {area}"
+    assert area == 2
 
 
 # Test for bisection method
@@ -156,7 +161,7 @@ def test_bisection_method():
 # Test for edge case: Single point curve
 def test_single_point_curve():
     curve_points_single = [[0.0, 0.0]]  # Single point
-    area, cx, cy = compute_submerged_area_and_centroid(curve_points_single)
+    area, cx, cy = compute_submerged_area_and_centroid(close_curve(curve_points_single))
     assert area == 0, f"Expected area = 0, but got {area}"
     assert cx == 0 and cy == 0, f"Expected centroid at (0, 0), but got ({cx}, {cy})"
 
@@ -164,7 +169,7 @@ def test_single_point_curve():
 # Test for edge case: Empty curve
 def test_empty_curve():
     curve_points_empty = []
-    area, cx, cy = compute_submerged_area_and_centroid(curve_points_empty)
+    area, cx, cy = compute_submerged_area_and_centroid(close_curve(curve_points_empty))
     assert area == 0, f"Expected area = 0, but got {area}"
     assert np.isnan(cx) and np.isnan(cy), (
         f"Expected centroid at (0, 0), but got ({cx}, {cy})"
@@ -182,7 +187,31 @@ def test_non_regression():
         [-1.0, 0.0],
         [0.0, 2.0],
     ]
-    area, cx, cy = compute_submerged_area_and_centroid(curve_points_simple)
+    area, cx, cy = compute_submerged_area_and_centroid(close_curve(curve_points_simple))
     assert area > 0, f"Expected area > 0, but got {area}"
     assert np.isclose(cx, 1.576, atol=0.1), f"Expected centroid x ≈ 1.0, but got {cx}"
     assert np.isclose(cy, -0.871, atol=0.1), f"Expected centroid y ≈ -1.0, but got {cy}"
+
+
+def test_find_draft_offset_at_vertical_equilibrium_down():
+    draft_offset = find_draft_offset_at_vertical_equilibrium(
+        target_displacement_area=1,
+        curve_points=close_curve([(-1, 2), (-1, 3), (1, 3), (1, 2)]),
+    )
+    assert draft_offset == 2.5
+
+
+def test_find_draft_offset_at_vertical_equilibrium_skimming():
+    draft_offset = find_draft_offset_at_vertical_equilibrium(
+        target_displacement_area=1,
+        curve_points=close_curve([(-1, 0), (-1, 1), (1, 1), (1, 0)]),
+    )
+    assert draft_offset == 0.5
+
+
+def test_find_draft_offset_at_vertical_equilibrium_skimming_up():
+    draft_offset = find_draft_offset_at_vertical_equilibrium(
+        target_displacement_area=1,
+        curve_points=close_curve([(-1, -2), (-1, -1), (1, -1), (1, -2)]),
+    )
+    assert draft_offset == -1.5

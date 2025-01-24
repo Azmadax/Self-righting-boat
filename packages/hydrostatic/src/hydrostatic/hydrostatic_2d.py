@@ -7,6 +7,23 @@ from typing import List, Tuple
 from scipy.optimize import bisect
 
 
+def close_curve(curve_points: List[List[float]]) -> List[List[float]]:
+    """
+    Ensure to close curve in order to get a polygon
+    Args:
+        curve_points (List[List[float]]): Curve which is already close or not
+
+    Returns:
+        List[List[float]]: The closed curve (polygon)
+    """
+    if curve_points:
+        if curve_points[0] == curve_points[-1]:
+            pass
+        else:
+            curve_points.append(curve_points[0])
+    return curve_points
+
+
 def computed_submerged_points(
     curve_points: List[List[float]],
 ) -> Tuple[np.ndarray, np.ndarray]:
@@ -69,12 +86,18 @@ def compute_area_and_centroid(
         cy = y[0]
     else:
         area = 0.5 * np.sum(x[:-1] * y[1:] - x[1:] * y[:-1])
-        cx = (1 / (6 * area)) * np.sum(
-            (x[:-1] + x[1:]) * (x[:-1] * y[1:] - x[1:] * y[:-1])
-        )
-        cy = (1 / (6 * area)) * np.sum(
-            (y[:-1] + y[1:]) * (x[:-1] * y[1:] - x[1:] * y[:-1])
-        )
+        if area == 0:
+            # Take the lowest point for continuity with the solid ground case
+            i_bottom = np.argmin(y)
+            cx = x[i_bottom]
+            cy = y[i_bottom]
+        else:
+            cx = (1 / (6 * area)) * np.sum(
+                (x[:-1] + x[1:]) * (x[:-1] * y[1:] - x[1:] * y[:-1])
+            )
+            cy = (1 / (6 * area)) * np.sum(
+                (y[:-1] + y[1:]) * (x[:-1] * y[1:] - x[1:] * y[:-1])
+            )
     return abs(area), cx, cy
 
 
@@ -124,22 +147,33 @@ def find_draft_offset_at_vertical_equilibrium(
 
     Args:
         target_displacement_area (float): The target displacement (area in 2D)
-        curve_pointsList[List[float]]: The points describing the 2D ship
+        curve_points (List[List[float]]: The points describing the 2D ship
 
     Returns:
-        float: The vertical offset (positive to move geometry down)
+        float: The vertical offset (positive to move geometry down, and increase draft and displacement)
     """
     y_min = min([p[1] for p in curve_points])
     y_max = max([p[1] for p in curve_points])
 
-    draft_offset_min, draft_offset_max = y_min, y_max  # Adjust bounds as needed
-    draft_offset_equilibrium = bisect(
-        area_difference,
-        draft_offset_min,
-        draft_offset_max,
-        args=(
-            target_displacement_area,
-            curve_points,
-        ),
-    )
+    draft_offset_min, draft_offset_max = (
+        y_min - 10,
+        y_max + 10,
+    )  # Adjust bounds as needed
+    try:
+        draft_offset_equilibrium = bisect(
+            area_difference,
+            draft_offset_min,
+            draft_offset_max,
+            args=(
+                target_displacement_area,
+                curve_points,
+            ),
+        )
+    except ValueError as e:
+        if str(e) == "f(a) and f(b) must have different signs":
+            raise ValueError("Ship is sinking")
+        else:
+            # Reraise error otherwise
+            raise ValueError(repr(e))
+
     return draft_offset_equilibrium
