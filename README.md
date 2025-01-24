@@ -62,7 +62,7 @@ Features
 - [ ] Optimized high density static keel to enable self-righting 
 
 Geometry supported
-- [ ] single 2D convex polygon
+- [x] single 2D convex polygon
 - [ ] multiple 2D convex polygons
 - [ ] 2D convex polygons with closed holes (free surface effect)
 - [ ] single 2D NURBS
