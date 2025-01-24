@@ -68,7 +68,6 @@ Geometry supported
 - [ ] single 2D NURBS
 - [ ] 3D meshes
 
-
 ## 📚 Credits
 
 This project was initiated as part of the Ocean Options program at **École Centrale Nantes**. It was proposed by the **International Kiteboat Federation France (IKIFF)** [kiteboat.org], with the goal of improving the safety of kiteboats.
@@ -85,7 +84,15 @@ This project was initiated as part of the Ocean Options program at **École Cent
 
 Contributions are welcome! Please open an issue or submit a pull request to suggest changes, report bugs, or propose new features.
 
----
+Here are a few code guidelines:
+We use english for code and comments.
+We use google style docstring.
+We use type hinting.
+Please be sure to install the pre-commit tool in order to check your code while commiting in order to keep a clean project history.
+   ```bash
+pre-commit install
+   ```
+Please have a look to makefile to find helpful commands.
 
 ## 📜 License
 ![License](https://img.shields.io/badge/license-MPL%202.0-brightgreen)
