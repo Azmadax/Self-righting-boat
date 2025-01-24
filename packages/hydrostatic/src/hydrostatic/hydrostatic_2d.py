@@ -4,6 +4,7 @@
 
 import numpy as np
 from typing import List, Tuple
+from scipy.optimize import bisect
 
 
 def computed_submerged_points(
@@ -113,3 +114,32 @@ def area_difference(
     # Compute the area below y=0 for the shifted curve
     area, _, _ = compute_submerged_area_and_centroid(shifted_points)
     return area - target_area
+
+
+def find_draft_offset_at_vertical_equilibrium(
+    target_displacement_area, curve_points: List[List[float]]
+) -> float:
+    """
+    Find the vertical offset to get the draft which enables to get the displacement of the ship
+
+    Args:
+        target_displacement_area (float): The target displacement (area in 2D)
+        curve_pointsList[List[float]]: The points describing the 2D ship
+
+    Returns:
+        float: The vertical offset (positive to move geometry down)
+    """
+    y_min = min([p[1] for p in curve_points])
+    y_max = max([p[1] for p in curve_points])
+
+    draft_offset_min, draft_offset_max = y_min, y_max  # Adjust bounds as needed
+    draft_offset_equilibrium = bisect(
+        area_difference,
+        draft_offset_min,
+        draft_offset_max,
+        args=(
+            target_displacement_area,
+            curve_points,
+        ),
+    )
+    return draft_offset_equilibrium

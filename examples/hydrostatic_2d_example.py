@@ -4,12 +4,11 @@
 
 from geomdl import NURBS
 import matplotlib.pyplot as plt
-from scipy.optimize import bisect
 
 from hydrostatic.hydrostatic_2d import (
-    area_difference,
     compute_submerged_area_and_centroid,
     computed_submerged_points,
+    find_draft_offset_at_vertical_equilibrium,
 )
 from mouse_interaction import get_mouse_clicks
 
@@ -43,15 +42,9 @@ curve_points.append(curve_points[0])
 
 # Step 2: Set the target area and find draft_offset using bisection
 target_area = 1.0  # Set the desired submerged area
-draft_offset_min, draft_offset_max = -2.0, 2.0  # Adjust bounds as needed
-draft_offset_equilibrium = bisect(
-    area_difference,
-    draft_offset_min,
-    draft_offset_max,
-    args=(
-        target_area,
-        curve_points,
-    ),
+
+draft_offset_equilibrium = find_draft_offset_at_vertical_equilibrium(
+    target_displacement_area=target_area, curve_points=curve_points
 )
 
 # Apply the found draft_offset to compute the submerged area and centroid
