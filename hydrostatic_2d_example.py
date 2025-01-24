@@ -31,7 +31,7 @@ curve.delta = 0.01  # Set resolution for sampling
 # Evaluate points on the curve
 curve_points = curve.evalpts
 curve_points = get_mouse_clicks(
-    "Draw polygon by clicking on vertices and double click at center of gravity to finish"
+    "Draw polygon by clicking on vertices and \n double click at center of gravity to finish."
 )
 
 # Last point is center of gravity
@@ -61,13 +61,14 @@ x, y = computed_submerged_points(shifted_points)
 
 # Output results
 print(f"Submerged Area (Volume): {area}")
-print(f"Centroid: ({cx}, {cy})")
+print(f"Center of buoyancy: ({cx}, {cy})")
 
 # (Optional) Plot the curve and submerged region
 curve_x, curve_y = zip(*shifted_points)
-plt.plot(curve_x, curve_y, label="Closed curve")
+plt.fill(curve_x, curve_y, color="red", alpha=0.1, edgecolor="black")
+plt.plot(curve_x, curve_y, color="black", label="Closed curve")
 
-plt.plot(cx, cy, marker="o", label="Centroid")
+plt.plot(cx, cy, marker="o", label="Center of buoyancy")
 plt.plot(
     center_of_gravity[0],
     center_of_gravity[1] - draft_offset_equilibrium,
@@ -75,10 +76,23 @@ plt.plot(
     markerfacecolor="red",
     label="Center of gravity",
 )
-plt.fill(x, y, color="blue", alpha=0.3, label="Submerged tegion")
-plt.axhline(0, color="red", linestyle="--", label="y=0 Line")
+left, right = plt.gca().get_xlim()
+bottom, top = plt.gca().get_xlim()
+plt.fill(
+    [2 * left, 2 * left, 2 * right, 2 * right],
+    [0, 2 * bottom, 2 * bottom, 0],
+    color="blue",
+    alpha=0.1,
+    label="Dense fluid",
+)
+# plt.gca().set_xlim(left, right)
+# plt.gca().set_ylim(bottom, top)
+# plt.fill(x, y, color="blue", alpha=0.1, label="Submerged region")
+plt.axhline(0, color="blue", linestyle="--", label="y=0 Line")
 plt.legend()
 plt.xlabel("X")
 plt.ylabel("Y")
-plt.title("Submerged Region Below y=0")
+plt.title(
+    f"Vertical equilibrium.\nTarget area = {target_area}, GZ = {cx - center_of_gravity[0]:.2f}"
+)
 plt.show()
