@@ -44,6 +44,7 @@ install-uv: ## Install uv project and packages manager
 	echo "uv installation/update complete."
 
 demo: ## Launch demo scripts
+	uv sync --package hydrostatic
 	uv run examples/hydrostatic_2d_example.py
 
 format: ## Format code consistently
@@ -54,7 +55,7 @@ lint: ## Clean code or warn user
 	ruff check . --fix
 
 test: ## Launch test
-	pytest tests
+	uv run pytest packages/hydrostatic/tests
 
 coverage: ## Launch coverage test
 	coverage run -m pytest tests
