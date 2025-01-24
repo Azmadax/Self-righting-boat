@@ -1,15 +1,13 @@
 [project]
-name = "self-righting-boat"
+name = "hydrostatic"
 version = "0.1.0"
-description = "Add your description here"
+description = "Hydrostatic computation"
 readme = "README.md"
 requires-python = ">=3.10,<3.12"
 dependencies = [
-    "geomdl==5.3.1",
     "matplotlib>=3.10.0",
     "numpy==1.23.5",
-    "pyqt6>=6.8.0",
-    "scipy==1.14",
+    "scipy>=1.14.0",
 ]
 
 [dependency-groups]
@@ -19,6 +17,6 @@ dev = [
     "pytest>=8.3.4",
     "ruff>=0.9.3",
 ]
-
-[tool.uv.workspace]
-members = ["packages/*"]
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

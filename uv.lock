@@ -1,6 +1,12 @@
 version = 1
 requires-python = ">=3.10, <3.12"
 
+[manifest]
+members = [
+    "hydrostatic",
+    "self-righting-boat",
+]
+
 [[package]]
 name = "cfgv"
 version = "3.4.0"
@@ -150,6 +156,39 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/b8/d5/036ea64422c1723c9ddc749984fe97f9d1beee496e407093544b05e9da72/geomdl-5.3.1.tar.gz", hash = "sha256:e81a31b4d5f111267b16045ba1d9539235a98b2cff5e4bad18f7ddcd4cb804c8", size = 141095 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/48/32/559b938e6654ecdf87d256ac2bfd9a25464560a312a58aaf25076d0ce48e/geomdl-5.3.1-py2.py3-none-any.whl", hash = "sha256:0f36a4bacde5b218c73aadc69ff152e7f7fb3aa7260df0e6647a701a5351d76a", size = 147573 },
+]
+
+[[package]]
+name = "hydrostatic"
+version = "0.1.0"
+source = { editable = "packages/hydrostatic" }
+dependencies = [
+    { name = "matplotlib" },
+    { name = "numpy" },
+    { name = "scipy" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "coverage" },
+    { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "matplotlib", specifier = ">=3.10.0" },
+    { name = "numpy", specifier = "==1.23.5" },
+    { name = "scipy", specifier = ">=1.14.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "coverage", specifier = ">=7.6.10" },
+    { name = "pre-commit", specifier = ">=4.1.0" },
+    { name = "pytest", specifier = ">=8.3.4" },
+    { name = "ruff", specifier = ">=0.9.3" },
 ]
 
 [[package]]

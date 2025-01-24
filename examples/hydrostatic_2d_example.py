@@ -6,7 +6,7 @@ from geomdl import NURBS
 import matplotlib.pyplot as plt
 from scipy.optimize import bisect
 
-from hydrostatic_2d import (
+from hydrostatic.hydrostatic_2d import (
     area_difference,
     compute_submerged_area_and_centroid,
     computed_submerged_points,

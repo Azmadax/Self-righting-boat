@@ -1,10 +1,7 @@
 import numpy as np
 from scipy.optimize import bisect
 
-from hydrostatic_2d import (
-    computed_submerged_points,
-    compute_submerged_area_and_centroid,
-)
+from hydrostatic import computed_submerged_points, compute_submerged_area_and_centroid
 
 
 def test_no_points_below_zero():
