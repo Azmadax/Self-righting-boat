@@ -24,7 +24,7 @@ def get_mouse_clicks(title):
     ax.set_xlim(-2, 2)
     ax.set_ylim(-2, 2)
     plt.plot([-0.5, 0.5, 0.5, -0.5, -0.5], [-0.5, -0.5, 0.5, 0.5, -0.5])
-    plt.legend(["Minimal reference area"])
+    plt.legend(["Minimal reference area=1m²"])
 
     # Connect the click event to the handler
     cid = fig.canvas.mpl_connect("button_press_event", onclick)
