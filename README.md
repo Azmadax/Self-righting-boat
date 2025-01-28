@@ -37,7 +37,7 @@ To install the required dependencies, follow the steps below:
 To launch an example, run the following command from root of repository:  
 ```bash
 uv sync --package hydrostatic
-uv run hydrostatic_2d_example.py
+uv run examples/hydrostatic_2d_example.py
 ```
 Alternatively, if you have make install, just run:
 ```bash
