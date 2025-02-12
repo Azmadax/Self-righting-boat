@@ -1,4 +1,5 @@
 import numpy as np
+import numpy.testing
 from scipy.optimize import bisect
 
 from hydrostatic import (
@@ -11,6 +12,7 @@ from hydrostatic.hydrostatic_2d import (
     compute_righting_arm,
     rotate,
     compute_righting_arm_curve,
+    find_equilibrium_points,
 )
 
 
@@ -243,10 +245,27 @@ def test_rotate():
 
 def test_compute_righting_arm_curve():
     curve_points = close_curve([[-1, 0], [1, 0], [1, 1], [-1, 1]])
-    center_of_gravity = [0, 0]
+    center_of_gravity = [0, 0.5]
     angles_deg = [0]
     target_area = 1.0  # Set the desired submerged area
     righting_arm_curve = compute_righting_arm_curve(
-        curve_points, center_of_gravity, target_area, angles_deg=angles_deg, plot=False
+        curve_points=curve_points,
+        center_of_gravity=center_of_gravity,
+        target_area=target_area,
+        angles_deg=angles_deg,
+        plot=False,
     )
     assert righting_arm_curve == [0]
+
+
+def test_find_equilibrium_points():
+    curve_points = close_curve([[-1, 0], [1, 0], [1, 1], [-1, 1]])
+    center_of_gravity = [0, 0.5]
+    target_area = 1.0  # Set the desired submerged area
+    eq = find_equilibrium_points(
+        curve_points=curve_points,
+        center_of_gravity=center_of_gravity,
+        target_area=target_area,
+        plot=False,
+    )
+    numpy.testing.assert_almost_equal(eq, [-90, 0, 90, 180])
