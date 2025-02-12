@@ -7,6 +7,11 @@ from hydrostatic import (
     find_draft_offset_at_vertical_equilibrium,
     close_curve,
 )
+from hydrostatic.hydrostatic_2d import (
+    compute_righting_arm,
+    rotate,
+    compute_righting_arm_curve,
+)
 
 
 def test_no_points_below_zero():
@@ -215,3 +220,33 @@ def test_find_draft_offset_at_vertical_equilibrium_skimming_up():
         curve_points=close_curve([(-1, -2), (-1, -1), (1, -1), (1, -2)]),
     )
     assert draft_offset == -1.5
+
+
+def test_compute_righting_arm():
+    half = [[1, 0], [2, 1], [1, 2]]
+    sym = [[-p[0], p[1]] for p in half]
+    sym.reverse()
+    assert (
+        compute_righting_arm(
+            curve_points=half + sym, target_area=1, center_of_gravity=[0, 0], plot=False
+        )
+        == 0
+    )
+
+
+def test_rotate():
+    curve_points = [[0, 0], [1, 0], [0, 1]]
+    np.testing.assert_almost_equal(
+        rotate(points=curve_points, angle=np.pi / 2), [[0, 0], [0, 1], [-1, 0]]
+    )
+
+
+def test_compute_righting_arm_curve():
+    curve_points = close_curve([[-1, 0], [1, 0], [1, 1], [-1, 1]])
+    center_of_gravity = [0, 0]
+    angles_deg = [0]
+    target_area = 1.0  # Set the desired submerged area
+    righting_arm_curve = compute_righting_arm_curve(
+        curve_points, center_of_gravity, target_area, angles_deg=angles_deg, plot=False
+    )
+    assert righting_arm_curve == [0]

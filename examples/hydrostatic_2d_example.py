@@ -1,14 +1,16 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
+from scipy.optimize import bisect
+
 import numpy as np
 from geomdl import NURBS
-import matplotlib.pyplot as plt
 
 from hydrostatic.hydrostatic_2d import (
-    compute_submerged_area_and_centroid,
-    computed_submerged_points,
-    find_draft_offset_at_vertical_equilibrium,
+    close_curve,
+    compute_righting_arm,
+    rotate,
+    compute_righting_arm_curve,
 )
 from mouse_interaction import get_mouse_clicks
 
@@ -29,76 +31,66 @@ curve.delta = 0.01  # Set resolution for sampling
 
 # Evaluate points on the curve
 curve_points = curve.evalpts
+target_area = 1.0  # Set the desired submerged area
 input_curve_points = get_mouse_clicks(
     "Draw polygon by clicking on vertices and \n double click at center of gravity to finish."
 )
-angles_deg = range(361)
-GZs = []
-for angle_deg in angles_deg:
-    complex_points = [p[0] + p[1] * 1j for p in input_curve_points]
-    complex_point_rotated = [
-        c * np.exp(1j * np.radians(angle_deg)) for c in complex_points
-    ]
-    curve_points = [(c.real, c.imag) for c in complex_point_rotated]
-    # Last point is center of gravity
-    center_of_gravity = curve_points.pop()
+angles_deg = range(-180, 181)
+center_of_gravity = input_curve_points.pop()
+# Duplicated first point in last position to get a polygon
+input_curve_points = close_curve(input_curve_points)
+righting_arm_curves = compute_righting_arm_curve(
+    curve_points=input_curve_points,
+    center_of_gravity=center_of_gravity,
+    target_area=target_area,
+    angles_deg=angles_deg,
+    plot=True,
+)
 
-    # Duplicated first point in last position to get a polygon
-    curve_points.append(curve_points[0])
 
-    # Step 2: Set the target area and find draft_offset using bisection
-    target_area = 1.0  # Set the desired submerged area
+# Define a function wrapper to be able to find root
+def f(angle_deg: float) -> float:
+    """
+    Wrap the function computing righting arm to get a function of angle of rotation only
 
-    draft_offset_equilibrium = find_draft_offset_at_vertical_equilibrium(
-        target_displacement_area=target_area, curve_points=curve_points
+    Args:
+        angle_deg (float): angle of rotation [deg]
+
+    Returns:
+        float: GZ [m]
+    """
+    righting_arm = compute_righting_arm_curve(
+        curve_points=input_curve_points,
+        angles_deg=[angle_deg],
+        center_of_gravity=center_of_gravity,
+        target_area=target_area,
+        plot=False,
+    )[0]
+    return righting_arm
+
+
+# Based on https://stackoverflow.com/questions/72333164/find-all-roots-of-an-arbitrary-interpolated-function-in-a-given-interval
+# Evaluate function with suffcie
+f_p = np.array(righting_arm_curves)
+# Find the discrete points where sign is changing
+(indices,) = np.nonzero(f_p[:-1] * f_p[1:] <= 0)
+
+# Search for zero between these points
+for i in range(indices.shape[0]):
+    guess_min = angles_deg[indices[i]]
+    guess_max = angles_deg[indices[i] + 1]
+    if guess_min > guess_max:
+        guess_min, guess_max = guess_max, guess_min
+
+    print(f(guess_min), f(guess_max))
+
+    equilibrium_angle_deg = bisect(f, a=guess_min, b=guess_max)
+    GZ = compute_righting_arm(
+        curve_points=rotate(input_curve_points, np.deg2rad(equilibrium_angle_deg)),
+        target_area=target_area,
+        center_of_gravity=rotate(
+            [center_of_gravity], np.deg2rad(equilibrium_angle_deg)
+        )[0],
+        plot=True,
     )
-
-    # Apply the found draft_offset to compute the submerged area and centroid
-    shifted_points = [[p[0], p[1] - draft_offset_equilibrium] for p in curve_points]
-    area, cx, cy = compute_submerged_area_and_centroid(shifted_points)
-    x, y = computed_submerged_points(shifted_points)
-    GZ = cx - center_of_gravity[0]
-    GZs.append(GZ)
-
-# Output results
-print(f"Submerged Area (Volume): {area}")
-print(f"Center of buoyancy: ({cx}, {cy})")
-
-# (Optional) Plot the curve and submerged region
-curve_x, curve_y = zip(*shifted_points)
-plt.fill(curve_x, curve_y, color="red", alpha=0.1, edgecolor="black")
-plt.plot(curve_x, curve_y, color="black", label="Closed curve")
-
-plt.plot(cx, cy, marker="o", label="Center of buoyancy")
-plt.plot(
-    center_of_gravity[0],
-    center_of_gravity[1] - draft_offset_equilibrium,
-    marker="o",
-    markerfacecolor="red",
-    label="Center of gravity",
-)
-left, right = plt.gca().get_xlim()
-bottom, top = plt.gca().get_xlim()
-plt.fill(
-    [2 * left, 2 * left, 2 * right, 2 * right],
-    [0, 2 * bottom, 2 * bottom, 0],
-    color="blue",
-    alpha=0.1,
-    label="Dense fluid",
-)
-# plt.gca().set_xlim(left, right)
-# plt.gca().set_ylim(bottom, top)
-# plt.fill(x, y, color="blue", alpha=0.1, label="Submerged region")
-plt.axhline(0, color="blue", linestyle="--", label="y=0 Line")
-plt.legend()
-plt.xlabel("X [m]")
-plt.ylabel("Y [m]")
-plt.title(f"Vertical equilibrium.\nTarget area = {target_area}m², GZ = {GZ:.2f}m")
-plt.show()
-
-plt.title("GZ curve")
-plt.plot(angles_deg, GZs, label="GZ")
-plt.grid()
-plt.xlabel("Angle of rotation [deg]")
-plt.ylabel("Righting arm GZ [m]")
-plt.show()
+    print("root", i + 1, "equilibrium_angle_deg=", equilibrium_angle_deg, "GZ=", GZ)
