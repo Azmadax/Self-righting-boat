@@ -308,3 +308,125 @@ def compute_righting_arm_curve(
         plt.ylabel("Righting arm GZ [m]")
         plt.show()
     return righting_arms
+
+
+def find_equilibrium_points(
+    curve_points: list[list[float]],
+    center_of_gravity: list[float],
+    target_area: float,
+    plot=False,
+) -> float:
+    """
+    Find the different equilibrium point (both heel and vertical equilibrium)
+
+    Args:
+        curve_points:
+        center_of_gravity:
+        target_area:
+
+    Returns:
+        list[float]: angles of equilibrium points [deg]
+    """
+    angles_deg = range(-180, 182)  # enlarge a bit
+
+    righting_arm_curves = compute_righting_arm_curve(
+        curve_points=curve_points,
+        center_of_gravity=center_of_gravity,
+        target_area=target_area,
+        angles_deg=angles_deg,
+        plot=plot,
+    )
+
+    # Define a function wrapper to be able to find root
+    def f(angle_deg: float) -> float:
+        """
+        Wrap the function computing righting arm to get a function of angle of rotation only
+
+        Args:
+            angle_deg (float): angle of rotation [deg]
+
+        Returns:
+            float: GZ [m]
+        """
+        righting_arm = compute_righting_arm_curve(
+            curve_points=curve_points,
+            angles_deg=[angle_deg],
+            center_of_gravity=center_of_gravity,
+            target_area=target_area,
+            plot=False,
+        )[0]
+        return righting_arm
+
+    # Based on https://stackoverflow.com/questions/72333164/find-all-roots-of-an-arbitrary-interpolated-function-in-a-given-interval
+    # Evaluate function with suffcie
+    f_p = np.array(righting_arm_curves)
+    # Find the discrete points where sign is changing
+    (indices,) = np.nonzero(f_p[:-1] * f_p[1:] <= 0)
+
+    equilibrium_angles_deg = []
+    # Search for zero between these points
+    for i in range(indices.shape[0]):
+        guess_min = angles_deg[indices[i]]
+        guess_max = angles_deg[indices[i] + 1]
+        if guess_min > guess_max:
+            guess_min, guess_max = guess_max, guess_min
+        equilibrium_angle_deg = bisect(f, a=guess_min, b=guess_max)
+        equilibrium_angles_deg.append(equilibrium_angle_deg)
+        if plot:
+            compute_righting_arm(
+                curve_points=rotate(curve_points, np.deg2rad(equilibrium_angle_deg)),
+                target_area=target_area,
+                center_of_gravity=rotate(
+                    [center_of_gravity], np.deg2rad(equilibrium_angle_deg)
+                )[0],
+                plot=True,
+            )
+    return mod_minus_180_180(unique_angles_deg(equilibrium_angles_deg))
+
+
+def unique_angles_deg(angles_deg: list[float], decimal: float = 1) -> list[float]:
+    """
+    Compute unique angle within a tolerance
+    Args:
+        angles_deg:
+        tolerance:
+
+    Returns:
+        list[float]: the list of float with suppressed angles
+    """
+    unique_angles_deg_list = []
+    tolerance = 10 ** (-decimal)
+
+    for angle_deg in angles_deg:
+        # Normalize the angle to the range [0, 360) for better comparison
+        normalized_angle_deg = angle_deg % 360
+
+        # Check if the angle is within tolerance of any already added angle
+        is_unique = True
+        for existing_angle in unique_angles_deg_list:
+            # Check if the difference between angles is less than the tolerance
+            if (
+                abs(normalized_angle_deg - existing_angle) < tolerance
+                or abs(360 - abs(normalized_angle_deg - existing_angle)) < tolerance
+            ):
+                is_unique = False
+                break
+
+        # If unique, add to the list
+        if is_unique:
+            unique_angles_deg_list.append(normalized_angle_deg)
+
+    return np.round(unique_angles_deg_list, decimals=decimal)
+
+
+def mod_minus_180_180(angle_deg: float):
+    """
+    Compute modulo of angles between ]-180;180]
+
+    Args:
+        angle_deg: angle [deg]
+
+    Returns:
+        float: angle between ]-180;180] [deg]
+    """
+    return -((-np.array(angle_deg) + 180) % 360 - 180)
