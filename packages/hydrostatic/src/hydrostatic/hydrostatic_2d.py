@@ -317,12 +317,12 @@ def find_equilibrium_points(
     plot=False,
 ) -> float:
     """
-    Find the different equilibrium point (both heel and vertical equilibrium)
+    Find the different equilibrium points (both heel and vertical equilibrium)
 
     Args:
-        curve_points:
-        center_of_gravity:
-        target_area:
+        curve_points(list[list[float]]: list of coordinates of 2D points
+        center_of_gravity (list[float]): 2D coordinates of center of gravity
+        target_area (float): target submerged area
 
     Returns:
         list[float]: angles of equilibrium points [deg]
@@ -358,7 +358,8 @@ def find_equilibrium_points(
         return righting_arm
 
     # Based on https://stackoverflow.com/questions/72333164/find-all-roots-of-an-arbitrary-interpolated-function-in-a-given-interval
-    # Evaluate function with suffcie
+
+    # Evaluate the function at several points with the sufficient accuracy
     f_p = np.array(righting_arm_curves)
     # Find the discrete points where sign is changing
     (indices,) = np.nonzero(f_p[:-1] * f_p[1:] <= 0)
@@ -387,9 +388,10 @@ def find_equilibrium_points(
 def unique_angles_deg(angles_deg: list[float], decimal: float = 1) -> list[float]:
     """
     Compute unique angle within a tolerance
+
     Args:
-        angles_deg:
-        tolerance:
+        angles_deg (list[float]): list of angles to be filtered to remove duplicates
+        decimal (int): number of decimals of degree to round the result
 
     Returns:
         list[float]: the list of float with suppressed angles
