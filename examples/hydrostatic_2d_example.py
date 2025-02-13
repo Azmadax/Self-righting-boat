@@ -8,7 +8,20 @@ from hydrostatic.hydrostatic_2d import (
     close_curve,
     find_equilibrium_points,
 )
+from hydrostatic.sample_boats_2d import generate_circular_boat
 from mouse_interaction import get_mouse_clicks
+
+# Duplicated first point in last position to get a polygon
+input_curve_points, _ = generate_circular_boat()
+input_curve_points = close_curve(input_curve_points)
+center_of_gravity = (0, 0)
+target_area = 0.1  # Set the desired submerged area
+eq = find_equilibrium_points(
+    curve_points=input_curve_points,
+    center_of_gravity=center_of_gravity,
+    target_area=target_area,
+    plot=True,
+)
 
 # Step 1: Define a Closed NURBS Curve
 curve = NURBS.Curve()
