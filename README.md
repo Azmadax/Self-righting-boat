@@ -80,19 +80,19 @@ Features:
 - [x] Center of buoyancy computation
 - [x] Vertical equilibrium
 - [x] Placement of center of gravity
-- [ ] Righting arm (GZ) computation
-- [ ] GZ curve computation
-- [ ] Research of equilibrium points
+- [x] Righting arm (GZ) computation
+- [x] GZ curve computation
+- [x] Research of equilibrium points
 - [ ] Metacentric height computation at equilibrium points using waterplane
 - [ ] Optimized additional low density static superstructure to enable self-righting
 - [ ] Optimized high density static keel to enable self-righting 
 
 Supported geometries:
-- [x] single 2D convex polygon
-- [ ] multiple 2D convex polygons
-- [ ] 2D convex polygons with closed holes (free surface effect)
-- [ ] single 2D NURBS
+- [x] single 2D closed polygon
+- [x] multiple 2D closed polygons
+- [ ] single 2D NURBS (numerical integration)
 - [ ] 3D meshes
+- [ ] 2D polygons with closed holes partially filled (free surface effect)
 
 ## 📚 Credits
 

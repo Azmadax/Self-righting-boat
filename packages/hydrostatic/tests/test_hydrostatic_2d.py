@@ -17,7 +17,7 @@ from hydrostatic.hydrostatic_2d import (
 from hydrostatic.sample_boats_2d import generate_circular_boat
 
 
-def test_no_points_below_zero():
+def test_computed_submerged_points_no_points_below_zero():
     """Test when there are no points below y=0."""
     curve_points = [[-1, 1], [0, 2], [1, 3], [2, 4]]
     x, y = computed_submerged_points(curve_points)
@@ -26,7 +26,7 @@ def test_no_points_below_zero():
     assert len(y) == 0
 
 
-def test_all_points_below_zero():
+def test_computed_submerged_points_all_points_below_zero():
     """Test when all points are below y=0."""
     curve_points = [[-2, -1], [0, -2], [2, -3], [3, -1]]
     x, y = computed_submerged_points(curve_points)
@@ -35,7 +35,7 @@ def test_all_points_below_zero():
     assert np.array_equal(y, np.array([-1, -2, -3, -1]))
 
 
-def test_curve_crossing_zero_once():
+def test_computed_submerged_points_curve_crossing_zero_once():
     """Test when the curve crosses y=0 exactly once."""
     curve_points = [[-2, -1], [0, 0], [2, 1]]
     x, y = computed_submerged_points(curve_points)
@@ -45,7 +45,7 @@ def test_curve_crossing_zero_once():
     assert np.array_equal(y, np.array([-1, 0]))  # y-coordinates of submerged points
 
 
-def test_curve_crossing_zero_multiple_times():
+def test_computed_submerged_points_curve_crossing_zero_multiple_times():
     """Test when the curve crosses y=0 multiple times."""
     curve_points = [[-2, -2], [0, 2], [2, -2], [3, -1], [5, 1]]
     x, y = computed_submerged_points(curve_points)
@@ -59,7 +59,7 @@ def test_curve_crossing_zero_multiple_times():
     )  # Y-coordinates of submerged points
 
 
-def test_curve_no_intersection_with_zero():
+def test_computed_submerged_points_curve_no_intersection_with_zero():
     """Test when the curve does not intersect with y=0."""
     curve_points = [[-2, 1], [0, 2], [2, 3], [3, 4]]
     x, y = computed_submerged_points(curve_points)
@@ -68,7 +68,7 @@ def test_curve_no_intersection_with_zero():
     assert len(y) == 0
 
 
-def test_empty_input():
+def test_computed_submerged_points_empty_input():
     """Test when the input list is empty."""
     curve_points = []
     x, y = computed_submerged_points(curve_points)
@@ -77,7 +77,7 @@ def test_empty_input():
     assert len(y) == 0
 
 
-def test_single_point_on_zero():
+def test_computed_submerged_points_single_point_on_zero():
     """Test when there is exactly one point on y=0."""
     curve_points = [[0, 0]]
     x, y = computed_submerged_points(curve_points)
@@ -86,7 +86,7 @@ def test_single_point_on_zero():
     assert len(y) == 1
 
 
-def test_points_on_y_zero_and_below():
+def test_computed_submerged_points_points_on_y_zero_and_below():
     """Test when points are on y=0 and some below y=0."""
     curve_points = [[-1, 0], [0, -1], [1, 1], [2, -1]]
     x, y = computed_submerged_points(curve_points)
@@ -96,6 +96,57 @@ def test_points_on_y_zero_and_below():
         x, np.array([-1, 0, 0.5, 1.5, 2])
     )  # Submerged points (includes points below)
     assert np.array_equal(y, np.array([0, -1, 0, 0, -1]))  # Correct y values below zero
+
+
+def test_computed_submerged_points_double_square():
+    """Test when points are on y=0 and some below y=0."""
+    curve_points = [
+        [-1, -1],
+        [-2, -1],
+        [-2, -2],
+        [-1, -2],
+        [-1, -1],
+        [1, -1],
+        [1, -2],
+        [2, -2],
+        [2, -1],
+        [1, -1],
+    ]
+    x, y = computed_submerged_points(curve_points)
+    assert np.all(y <= 0)
+    assert len(x) == len(curve_points)  # 0 is not considered submerged
+    assert np.array_equal(
+        x, np.array([-1, -2, -2, -1, -1, 1, 1, 2, 2, 1])
+    )  # Submerged points (includes points below)
+    assert np.array_equal(
+        y, np.array([-1, -1, -2, -2, -1, -1, -2, -2, -1, -1])
+    )  # Correct y values below zero
+
+
+def test_computed_submerged_points_double_square_with_overlap():
+    """Test when points are on y=0 and some below y=0."""
+    curve_points = [
+        [0.25, -1],
+        [-0.75, -1],
+        [-0.75, -2],
+        [0.25, -2],
+        [0.25, -1],
+        [-0.25, -1],
+        [-0.25, -2],
+        [0.75, -2],
+        [0.75, -1],
+        [-0.25, -1],
+    ]
+
+    x, y = computed_submerged_points(curve_points)
+    assert np.all(y <= 0)
+    assert len(x) == len(curve_points)  # 0 is not considered submerged
+    assert np.array_equal(
+        x, np.array([0.25, -0.75, -0.75, 0.25, 0.25, -0.25, -0.25, 0.75, 0.75, -0.25])
+    )  # Submerged points (includes points below)
+    assert np.array_equal(
+        y, np.array([-1, -1, -2, -2, -1, -1, -2, -2, -1, -1])
+    )  # Correct y values below zero
 
 
 # Test for curve above y=0 (no submerged area)
@@ -199,6 +250,44 @@ def test_non_regression():
     assert area > 0, f"Expected area > 0, but got {area}"
     assert np.isclose(cx, 1.576, atol=0.1), f"Expected centroid x ≈ 1.0, but got {cx}"
     assert np.isclose(cy, -0.871, atol=0.1), f"Expected centroid y ≈ -1.0, but got {cy}"
+
+
+def test_compute_submerged_area_and_centroid_double_square():
+    curve_points = [
+        [-1, -1],
+        [-2, -1],
+        [-2, -2],
+        [-1, -2],
+        [-1, -1],
+        [1, -1],
+        [1, -2],
+        [2, -2],
+        [2, -1],
+        [1, -1],
+    ]
+    area, cx, cy = compute_submerged_area_and_centroid(close_curve(curve_points))
+    assert area == 2
+    assert np.isclose(cx, 0, atol=0.1), f"Expected centroid x ≈ .0, but got {cx}"
+    assert np.isclose(cy, -1.5, atol=0.1), f"Expected centroid y ≈ -1.5, but got {cy}"
+
+
+def test_compute_submerged_area_and_centroid_double_square_with_overlap():
+    curve_points = [
+        [0.25, -1],
+        [-0.75, -1],
+        [-0.75, -2],
+        [0.25, -2],
+        [0.25, -1],
+        [-0.25, -1],
+        [-0.25, -2],
+        [0.75, -2],
+        [0.75, -1],
+        [-0.25, -1],
+    ]
+    area, cx, cy = compute_submerged_area_and_centroid(close_curve(curve_points))
+    assert area == 2
+    assert np.isclose(cx, 0, atol=0.1), f"Expected centroid x ≈ .0, but got {cx}"
+    assert np.isclose(cy, -1.5, atol=0.1), f"Expected centroid y ≈ -1.5, but got {cy}"
 
 
 def test_find_draft_offset_at_vertical_equilibrium_down():
