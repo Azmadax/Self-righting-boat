@@ -246,6 +246,8 @@ def compute_righting_arm(
         plt.title(
             f"Vertical equilibrium.\nTarget area = {target_area}m², GZ = {righting_arm:.2f}m"
         )
+        ax = plt.gca()
+        ax.set_aspect("equal", "box")
         plt.show()
 
     return righting_arm
@@ -373,7 +375,13 @@ def find_equilibrium_points(
             guess_min, guess_max = guess_max, guess_min
         equilibrium_angle_deg = bisect(f, a=guess_min, b=guess_max)
         equilibrium_angles_deg.append(equilibrium_angle_deg)
-        if plot:
+
+    # Filter to avoid duplicate
+    equilibrium_angles_deg = mod_minus_180_180(
+        unique_angles_deg(equilibrium_angles_deg)
+    )
+    if plot:
+        for equilibrium_angle_deg in equilibrium_angles_deg:
             compute_righting_arm(
                 curve_points=rotate(curve_points, np.deg2rad(equilibrium_angle_deg)),
                 target_area=target_area,
@@ -382,7 +390,7 @@ def find_equilibrium_points(
                 )[0],
                 plot=True,
             )
-    return mod_minus_180_180(unique_angles_deg(equilibrium_angles_deg))
+    return
 
 
 def unique_angles_deg(angles_deg: list[float], decimal: float = 1) -> list[float]:
