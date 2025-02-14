@@ -3,7 +3,6 @@ import numpy.testing
 from scipy.optimize import bisect
 
 from hydrostatic import (
-    computed_submerged_points,
     compute_submerged_area_and_centroid,
     find_draft_offset_at_vertical_equilibrium,
     close_curve,
@@ -13,6 +12,7 @@ from hydrostatic.hydrostatic_2d import (
     rotate,
     compute_righting_arm_curve,
     find_equilibrium_points,
+    compute_submerged_points_and_segments,
 )
 from hydrostatic.sample_boats_2d import generate_circular_boat
 
@@ -20,35 +20,39 @@ from hydrostatic.sample_boats_2d import generate_circular_boat
 def test_computed_submerged_points_no_points_below_zero():
     """Test when there are no points below y=0."""
     curve_points = [[-1, 1], [0, 2], [1, 3], [2, 4]]
-    x, y = computed_submerged_points(curve_points)
+    x, y, segments = compute_submerged_points_and_segments(curve_points)
     assert np.all(y <= 0)
     assert len(x) == 0
     assert len(y) == 0
+    assert len(segments) == 0  # No segments under y=0
 
 
 def test_computed_submerged_points_all_points_below_zero():
     """Test when all points are below y=0."""
     curve_points = [[-2, -1], [0, -2], [2, -3], [3, -1]]
-    x, y = computed_submerged_points(curve_points)
+    x, y, segments = compute_submerged_points_and_segments(curve_points)
     assert np.all(y <= 0)
     assert len(x) == len(curve_points)  # All points should be below y=0
     assert np.array_equal(y, np.array([-1, -2, -3, -1]))
+    assert len(segments) == 0  # No segments, just points
 
 
 def test_computed_submerged_points_curve_crossing_zero_once():
     """Test when the curve crosses y=0 exactly once."""
     curve_points = [[-2, -1], [0, 0], [2, 1]]
-    x, y = computed_submerged_points(curve_points)
+    x, y, segments = compute_submerged_points_and_segments(curve_points)
     assert np.all(y <= 0)
     assert len(x) == 2  # There should be one point exactly on y=0
     assert np.array_equal(x, np.array([-2, 0]))  # x-coordinates of submerged points
     assert np.array_equal(y, np.array([-1, 0]))  # y-coordinates of submerged points
 
+    # Do not check for segment as polygon is not closed
+
 
 def test_computed_submerged_points_curve_crossing_zero_multiple_times():
     """Test when the curve crosses y=0 multiple times."""
     curve_points = [[-2, -2], [0, 2], [2, -2], [3, -1], [5, 1]]
-    x, y = computed_submerged_points(curve_points)
+    x, y, segments = compute_submerged_points_and_segments(curve_points)
     assert np.all(y <= 0)
     assert len(x) == 6  # Points below y=0 should be found
     assert np.array_equal(
@@ -58,69 +62,77 @@ def test_computed_submerged_points_curve_crossing_zero_multiple_times():
         y, np.array([-2, 0, 0, -2, -1, 0])
     )  # Y-coordinates of submerged points
 
+    # Do not check for segment as polygon is not closed
+
 
 def test_computed_submerged_points_curve_no_intersection_with_zero():
     """Test when the curve does not intersect with y=0."""
     curve_points = [[-2, 1], [0, 2], [2, 3], [3, 4]]
-    x, y = computed_submerged_points(curve_points)
+    x, y, segments = compute_submerged_points_and_segments(curve_points)
     assert np.all(y <= 0)
     assert len(x) == 0
     assert len(y) == 0
+    assert len(segments) == 0  # No intersections
 
 
 def test_computed_submerged_points_empty_input():
     """Test when the input list is empty."""
     curve_points = []
-    x, y = computed_submerged_points(curve_points)
+    x, y, segments = compute_submerged_points_and_segments(curve_points)
     assert np.all(y <= 0)
     assert len(x) == 0
     assert len(y) == 0
+    assert len(segments) == 0  # No points or segments
 
 
 def test_computed_submerged_points_single_point_on_zero():
     """Test when there is exactly one point on y=0."""
     curve_points = [[0, 0]]
-    x, y = computed_submerged_points(curve_points)
+    x, y, segments = compute_submerged_points_and_segments(curve_points)
     assert np.all(y <= 0)
     assert len(x) == 1
     assert len(y) == 1
+    assert len(segments) == 0  # No segment, just one point
 
 
 def test_computed_submerged_points_points_on_y_zero_and_below():
     """Test when points are on y=0 and some below y=0."""
     curve_points = [[-1, 0], [0, -1], [1, 1], [2, -1]]
-    x, y = computed_submerged_points(curve_points)
+    x, y, segments = compute_submerged_points_and_segments(curve_points)
     assert np.all(y <= 0)
-    assert len(x) == 5  # 0 is not considered submerged
+    assert len(x) == 5  # Including points below and on y=0
     assert np.array_equal(
         x, np.array([-1, 0, 0.5, 1.5, 2])
     )  # Submerged points (includes points below)
     assert np.array_equal(y, np.array([0, -1, 0, 0, -1]))  # Correct y values below zero
+    # Do not check for segment as polygon is not closed
 
 
 def test_computed_submerged_points_double_square():
     """Test when points are on y=0 and some below y=0."""
     curve_points = [
-        [-1, -1],
-        [-2, -1],
-        [-2, -2],
-        [-1, -2],
-        [-1, -1],
-        [1, -1],
-        [1, -2],
-        [2, -2],
-        [2, -1],
-        [1, -1],
+        [-1, 0.5],
+        [-2, 0.5],
+        [-2, -0.5],
+        [-1, -0.5],
+        [-1, 0.5],
+        [1, 0.5],
+        [1, -0.5],
+        [2, -0.5],
+        [2, 0.5],
+        [1, 0.5],
+        [-1, 0.5],
     ]
-    x, y = computed_submerged_points(curve_points)
+    x, y, segments = compute_submerged_points_and_segments(curve_points)
     assert np.all(y <= 0)
-    assert len(x) == len(curve_points)  # 0 is not considered submerged
     assert np.array_equal(
-        x, np.array([-1, -2, -2, -1, -1, 1, 1, 2, 2, 1])
+        x, np.array([-2.0, -2.0, -1.0, -1.0, 1.0, 1.0, 2.0, 2.0])
     )  # Submerged points (includes points below)
     assert np.array_equal(
-        y, np.array([-1, -1, -2, -2, -1, -1, -2, -2, -1, -1])
+        y, np.array([0.0, -0.5, -0.5, 0.0, 0.0, -0.5, -0.5, 0.0])
     )  # Correct y values below zero
+    assert len(segments) == 2
+    assert segments == [(-2, -1), (1, 2)]
 
 
 def test_computed_submerged_points_double_square_with_overlap():
@@ -137,8 +149,7 @@ def test_computed_submerged_points_double_square_with_overlap():
         [0.75, -1],
         [-0.25, -1],
     ]
-
-    x, y = computed_submerged_points(curve_points)
+    x, y, segments = compute_submerged_points_and_segments(curve_points)
     assert np.all(y <= 0)
     assert len(x) == len(curve_points)  # 0 is not considered submerged
     assert np.array_equal(
@@ -147,6 +158,7 @@ def test_computed_submerged_points_double_square_with_overlap():
     assert np.array_equal(
         y, np.array([-1, -1, -2, -2, -1, -1, -2, -2, -1, -1])
     )  # Correct y values below zero
+    assert len(segments) == 0
 
 
 # Test for curve above y=0 (no submerged area)

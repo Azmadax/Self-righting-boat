@@ -24,41 +24,61 @@ def close_curve(curve_points: list[list[float]]) -> list[list[float]]:
     return curve_points
 
 
-def computed_submerged_points(
+def compute_submerged_points_and_segments(
     curve_points: list[list[float]],
-) -> tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, list[tuple[float, float]]]:
     """
-    Compute the submerged points below y=0 of a polygon chain (first point must be repeated in last position for polygon)
+    Compute the submerged points below y=0 of a polygon chain and flotation segments
 
     Args:
-        curve_points (list[list[float]]): list of points defining the curve.
+        curve_points (list[list[float]]): List of points defining the curve (first point must be repeated in last position for polygon).
 
     Returns:
-        Tuple[np.ndarray, np.ndarray]: Arrays of x (horizontal) and y (vertical up) coordinates of submerged points below y=0.
+        Tuple[np.ndarray, np.ndarray, List[Tuple[float, float]]]:
+        - Arrays of x and y coordinates of submerged points.
+        - List of tuples representing segments describing flotation (pairs of x-coordinates on the line y=0).
     """
     below_points = []
+    flotation_points = []
 
     for i in range(len(curve_points) - 1):
         p1, p2 = curve_points[i], curve_points[i + 1]
 
+        # Add submerged point if below the waterline
         if p1[1] <= 0:
             below_points.append(p1)
-        if p1[1] < 0 < p2[1] or p2[1] < 0 < p1[1]:
-            # Linear interpolation to find intersection with y=0
-            t = -p1[1] / (p2[1] - p1[1])
+        if p1[1] == 0:
+            flotation_points.append(p1[0])
+
+        # Check for intersection with the waterline
+        if (p1[1] < 0 < p2[1]) or (p2[1] < 0 < p1[1]):
+            t = -p1[1] / (
+                p2[1] - p1[1]
+            )  # Linear interpolation to find intersection with y=0
             intersect = [p1[0] + t * (p2[0] - p1[0]), 0.0]
             below_points.append(intersect)
+            flotation_points.append(intersect[0])
 
+    # Add last point if it’s below the waterline
     if curve_points:
         if curve_points[-1][1] <= 0:
             below_points.append(curve_points[-1])
+        if curve_points[-1][1] == 0:
+            flotation_points.append(curve_points[-1][0])
 
+    flotation_points = np.sort(flotation_points)
+    x_flotations = [
+        (flotation_points[2 * i], flotation_points[2 * i + 1])
+        for i in range(int(len(flotation_points) / 2))
+    ]
+
+    # Convert the list of points to numpy arrays
     if len(below_points) == 0:
-        return np.array([]), np.array([])
+        return np.array([]), np.array([]), x_flotations
     else:
         below_points = np.array(below_points)
         x, y = below_points[:, 0], below_points[:, 1]
-        return x, y
+        return x, y, x_flotations
 
 
 def compute_area_and_centroid(
@@ -113,7 +133,7 @@ def compute_submerged_area_and_centroid(
     Returns:
         Tuple[float, float, float]: Area, x-coordinate of centroid, and y-coordinate of centroid.
     """
-    x, y = computed_submerged_points(curve_points)
+    x, y, segments = compute_submerged_points_and_segments(curve_points)
     area, cx, cy = compute_area_and_centroid(x, y)
     return area, cx, cy
 
@@ -204,7 +224,7 @@ def compute_righting_arm(
     # Apply the found draft_offset to compute the submerged area and centroid
     shifted_points = [[p[0], p[1] - draft_offset_equilibrium] for p in curve_points]
     area, cx, cy = compute_submerged_area_and_centroid(shifted_points)
-    x, y = computed_submerged_points(shifted_points)
+    x, y, segments = compute_submerged_points_and_segments(shifted_points)
     righting_arm = (
         center_of_gravity[0] - cx
     )  # Sign convention chosen to have positive slope when stable
