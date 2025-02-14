@@ -14,6 +14,7 @@ from hydrostatic.hydrostatic_2d import (
     compute_righting_arm_curve,
     find_equilibrium_points,
 )
+from hydrostatic.sample_boats_2d import generate_circular_boat
 
 
 def test_no_points_below_zero():
@@ -243,10 +244,10 @@ def test_rotate():
     )
 
 
-def test_compute_righting_arm_curve():
+def test_compute_righting_arm_curve_symmetric_rectangle():
     curve_points = close_curve([[-1, 0], [1, 0], [1, 1], [-1, 1]])
     center_of_gravity = [0, 0.5]
-    angles_deg = [0]
+    angles_deg = [-15, 0, 15]
     target_area = 1.0  # Set the desired submerged area
     righting_arm_curve = compute_righting_arm_curve(
         curve_points=curve_points,
@@ -255,7 +256,28 @@ def test_compute_righting_arm_curve():
         angles_deg=angles_deg,
         plot=False,
     )
-    assert righting_arm_curve == [0]
+
+    assert righting_arm_curve[1] == [0]
+
+    # Check sign convention (GZ slope positive for stable equilibrium point)
+    assert righting_arm_curve[0] < 0
+    assert righting_arm_curve[2] > 0
+
+
+def test_compute_righting_arm_curve_circular_boat():
+    curve_points, center_of_gravity = generate_circular_boat()
+    angles_deg = range(0, 360)
+    target_area = 1.0  # Set the desired submerged area
+    righting_arm_curve = compute_righting_arm_curve(
+        curve_points=close_curve(curve_points),
+        center_of_gravity=center_of_gravity,
+        target_area=target_area,
+        angles_deg=angles_deg,
+        plot=False,
+    )
+
+    # For a circle with center of gravity at center, there are always symmetry and zero righting arm
+    assert np.max(np.abs(righting_arm_curve)) < 1e-3
 
 
 def test_find_equilibrium_points():
