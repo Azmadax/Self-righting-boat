@@ -40,7 +40,7 @@ curve_points = [
 center_of_gravity = [0, 0]
 # Duplicated first point in last position to get a polygon
 curve_points = close_curve(curve_points)
-
+target_area = 0.5
 eq = find_equilibrium_points(
     curve_points=curve_points,
     center_of_gravity=center_of_gravity,

@@ -158,9 +158,13 @@ def compute_submerged_area_and_centroid(
     x, y, x_flotations = compute_submerged_points_and_segments(curve_points)
 
     area, cx, cy = compute_area_and_centroid(x, y)
-    metacentric_radius = compute_flotation_segments_inertia(
-        x_flotations=x_flotations, x_center=cx
-    )
+    if area > 0:
+        metacentric_radius = (
+            compute_flotation_segments_inertia(x_flotations=x_flotations, x_center=cx)
+            / area
+        )
+    else:
+        metacentric_radius = 0
     return area, cx, cy, metacentric_radius
 
 
@@ -266,12 +270,10 @@ def compute_righting_arm(
         curve_x, curve_y = zip(*shifted_points)
         plt.fill(curve_x, curve_y, color="red", alpha=0.1, edgecolor="black")
         plt.plot(curve_x, curve_y, color="black", label="Closed curve")
-        for segment in segments:
-            plt.plot(segment, [0, 0], color="red", label="Flotation")
         plt.plot(cx, cy, marker="o", label="Center of buoyancy")
         plt.plot(
-            cx + metacentric_radius,
-            cy,
+            cx,
+            cy + metacentric_radius,
             marker="o",
             markerfacecolor="red",
             label="Metacenter",
@@ -295,8 +297,10 @@ def compute_righting_arm(
         # plt.gca().set_xlim(left, right)
         # plt.gca().set_ylim(bottom, top)
         # plt.fill(x, y, color="blue", alpha=0.1, label="Submerged region")
-        plt.axhline(0, color="blue", linestyle="--", label="y=0 Line")
-        plt.legend()
+        plt.axhline(0, color="blue", linestyle="--", label="Free surface")
+        for segment in segments:
+            plt.plot(segment, [0, 0], color="red", linestyle="--", label="Flotation")
+        plt.legend(loc="center left", bbox_to_anchor=(1, 0.5))
         plt.xlabel("X [m]")
         plt.ylabel("Y [m]")
         plt.title(
@@ -304,6 +308,7 @@ def compute_righting_arm(
         )
         ax = plt.gca()
         ax.set_aspect("equal", "box")
+        plt.tight_layout()
         plt.show()
 
     return righting_arm, metacentric_radius
