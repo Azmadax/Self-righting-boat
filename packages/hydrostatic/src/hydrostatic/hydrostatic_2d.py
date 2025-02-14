@@ -81,6 +81,28 @@ def compute_submerged_points_and_segments(
         return x, y, x_flotations
 
 
+def compute_flotation_segments_inertia(
+    x_flotations: list[tuple[float, float]], x_center: float
+) -> float:
+    """
+    Compute inertia of the segments defining the flotation.
+    To be used in metacenter computation (the infinitesimal variation of the buoyancy for a rotation around a point is
+    given by the product of change of depth at this point (which is varying linearly) by the lever arm at this point.
+
+    Args:
+        x_flotations(list[tuple[float, float]): pairs of x coordinates describing segment at flotation [unit]
+        x_center(float): coordinates of point around which computing the inertia [unit]
+
+    Returns:
+        float: inertia of the flotation at center of rotation [unit**2]
+    """
+
+    inertia = 0
+    for xs in x_flotations:
+        inertia += np.abs((xs[0] - x_center) ** 3 / 3 - (xs[1] - x_center) ** 3 / 3)
+    return inertia
+
+
 def compute_area_and_centroid(
     x: np.ndarray, y: np.ndarray
 ) -> tuple[float, float, float]:
@@ -133,9 +155,13 @@ def compute_submerged_area_and_centroid(
     Returns:
         Tuple[float, float, float]: Area, x-coordinate of centroid, and y-coordinate of centroid.
     """
-    x, y, segments = compute_submerged_points_and_segments(curve_points)
+    x, y, x_flotations = compute_submerged_points_and_segments(curve_points)
+
     area, cx, cy = compute_area_and_centroid(x, y)
-    return area, cx, cy
+    metacentric_radius = compute_flotation_segments_inertia(
+        x_flotations=x_flotations, x_center=cx
+    )
+    return area, cx, cy, metacentric_radius
 
 
 def area_difference(
@@ -155,7 +181,7 @@ def area_difference(
     # Shift curve points by draft_offset
     shifted_points = [[p[0], p[1] - draft_offset] for p in curve_points]
     # Compute the area below y=0 for the shifted curve
-    area, _, _ = compute_submerged_area_and_centroid(shifted_points)
+    area, _, _, _ = compute_submerged_area_and_centroid(shifted_points)
     return area - target_area
 
 
@@ -223,8 +249,10 @@ def compute_righting_arm(
 
     # Apply the found draft_offset to compute the submerged area and centroid
     shifted_points = [[p[0], p[1] - draft_offset_equilibrium] for p in curve_points]
-    area, cx, cy = compute_submerged_area_and_centroid(shifted_points)
-    x, y, segments = compute_submerged_points_and_segments(shifted_points)
+    area, cx, cy, metacentric_radius = compute_submerged_area_and_centroid(
+        shifted_points
+    )
+    _, _, segments = compute_submerged_points_and_segments(shifted_points)
     righting_arm = (
         center_of_gravity[0] - cx
     )  # Sign convention chosen to have positive slope when stable
@@ -238,8 +266,16 @@ def compute_righting_arm(
         curve_x, curve_y = zip(*shifted_points)
         plt.fill(curve_x, curve_y, color="red", alpha=0.1, edgecolor="black")
         plt.plot(curve_x, curve_y, color="black", label="Closed curve")
-
+        for segment in segments:
+            plt.plot(segment, [0, 0], color="red", label="Flotation")
         plt.plot(cx, cy, marker="o", label="Center of buoyancy")
+        plt.plot(
+            cx + metacentric_radius,
+            cy,
+            marker="o",
+            markerfacecolor="red",
+            label="Metacenter",
+        )
         plt.plot(
             center_of_gravity[0],
             center_of_gravity[1] - draft_offset_equilibrium,
@@ -270,7 +306,7 @@ def compute_righting_arm(
         ax.set_aspect("equal", "box")
         plt.show()
 
-    return righting_arm
+    return righting_arm, metacentric_radius
 
 
 def rotate(points: list[list[float]], angle) -> list[list[float]]:
@@ -314,7 +350,7 @@ def compute_righting_arm_curve(
 
         # Step 2: find draft_offset using bisection to match the target_area
 
-        righting_arm = compute_righting_arm(
+        righting_arm, metacentric_radius = compute_righting_arm(
             curve_points=rotated_curve_points,
             target_area=target_area,
             center_of_gravity=rotated_center_of_gravity,
