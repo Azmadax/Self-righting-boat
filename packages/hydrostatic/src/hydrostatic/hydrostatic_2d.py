@@ -390,7 +390,7 @@ def find_equilibrium_points(
                 )[0],
                 plot=True,
             )
-    return
+    return equilibrium_angles_deg
 
 
 def unique_angles_deg(angles_deg: list[float], decimal: float = 1) -> list[float]:
