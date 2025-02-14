@@ -23,6 +23,31 @@ eq = find_equilibrium_points(
     plot=True,
 )
 
+print("Demo catamaran")
+
+curve_points = [
+    [-1, -1],
+    [-2, -1],
+    [-2, -2],
+    [-1, -2],
+    [-1, -1],
+    [1, -1],
+    [1, -2],
+    [2, -2],
+    [2, -1],
+    [1, -1],
+]
+center_of_gravity = [0, 0]
+# Duplicated first point in last position to get a polygon
+curve_points = close_curve(curve_points)
+
+eq = find_equilibrium_points(
+    curve_points=curve_points,
+    center_of_gravity=center_of_gravity,
+    target_area=target_area,
+    plot=True,
+)
+
 # Step 1: Define a Closed NURBS Curve
 curve = NURBS.Curve()
 curve.degree = 3
