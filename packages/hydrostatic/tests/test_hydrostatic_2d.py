@@ -1,6 +1,7 @@
 import numpy as np
 import numpy.testing
 from scipy.optimize import bisect
+import pytest
 
 from hydrostatic import (
     compute_submerged_area_and_centroid,
@@ -14,6 +15,7 @@ from hydrostatic.hydrostatic_2d import (
     find_equilibrium_points,
     compute_submerged_points_and_segments,
     compute_flotation_segments_inertia,
+    compute_area_and_centroid,
 )
 from hydrostatic.sample_boats_2d import generate_circular_boat
 
@@ -175,6 +177,14 @@ def test_compute_flotation_segments_inertia():
     assert (
         compute_flotation_segments_inertia(x_flotations=[(-1.0, 1.0)], x_center=0)
         == 2 / 3
+    )
+
+
+def test_compute_area_and_centroid_flat():
+    assert compute_area_and_centroid(x=np.array([0, 0]), y=np.array([1.0, 2.0])) == (
+        0,
+        0,
+        1,
     )
 
 
@@ -344,6 +354,14 @@ def test_find_draft_offset_at_vertical_equilibrium_skimming_up():
     assert draft_offset == -1.5
 
 
+def test_find_draft_offset_at_vertical_equilibrium_sinking():
+    with pytest.raises(ValueError):
+        _ = find_draft_offset_at_vertical_equilibrium(
+            target_displacement_area=10,
+            curve_points=close_curve([(-1, -2), (-1, -1), (1, -1), (1, -2)]),
+        )
+
+
 def test_compute_righting_arm():
     half = [[1, 0], [2, 1], [1, 2]]
     sym = [[-p[0], p[1]] for p in half]
@@ -392,9 +410,15 @@ def test_compute_righting_arm_curve_circular_boat():
         angles_deg=angles_deg,
         plot=False,
     )
-
     # For a circle with center of gravity at center, there are always symmetry and zero righting arm
     assert np.max(np.abs(righting_arm_curve)) < 1e-3
+    righting_arm, metacentric_height = compute_righting_arm(
+        curve_points=close_curve(curve_points),
+        target_area=1,
+        center_of_gravity=center_of_gravity,
+        plot=False,
+    )
+    assert pytest.approx(metacentric_height, abs=0.003) == 0
 
 
 def test_find_equilibrium_points():

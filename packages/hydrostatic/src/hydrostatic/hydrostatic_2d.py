@@ -246,6 +246,7 @@ def compute_righting_arm(
 
     Returns:
         float: the righting arm GZ [m]
+        float: the metacentric height [m]
     """
     draft_offset_equilibrium = find_draft_offset_at_vertical_equilibrium(
         target_displacement_area=target_area, curve_points=curve_points
@@ -260,6 +261,10 @@ def compute_righting_arm(
     righting_arm = (
         center_of_gravity[0] - cx
     )  # Sign convention chosen to have positive slope when stable
+
+    metacentric_height = (
+        cy + draft_offset_equilibrium + metacentric_radius - center_of_gravity[1]
+    )
 
     if plot:
         # Output results
@@ -311,7 +316,7 @@ def compute_righting_arm(
         plt.tight_layout()
         plt.show()
 
-    return righting_arm, metacentric_radius
+    return righting_arm, metacentric_height
 
 
 def rotate(points: list[list[float]], angle) -> list[list[float]]:
