@@ -43,7 +43,9 @@ Alternatively, if you have make install, just run:
 ```bash
 make demo
 ```
-
+![circle example](docs/source/img/circle_example.png)
+![catamaran example](docs/source/img/catamaran.png)
+![catamaran GZ curve example](docs/source/img/GZ_curve.png)
 ## Test
 To launch the complete suite of tests, launch the following command:
 ```bash
