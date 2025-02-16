@@ -58,7 +58,7 @@ test: ## Launch test
 	uv run pytest packages/hydrostatic/tests
 
 coverage: ## Launch coverage test
-	coverage run -m pytest tests
+	coverage run -m pytest packages/hydrostatic/tests
 	coverage html --omit="*/test*"
 
 

@@ -24,41 +24,83 @@ def close_curve(curve_points: list[list[float]]) -> list[list[float]]:
     return curve_points
 
 
-def computed_submerged_points(
+def compute_submerged_points_and_segments(
     curve_points: list[list[float]],
-) -> tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, list[tuple[float, float]]]:
     """
-    Compute the submerged points below y=0 of a polygon chain (first point must be repeated in last position for polygon)
+    Compute the submerged points below y=0 of a polygon chain and flotation segments
 
     Args:
-        curve_points (list[list[float]]): list of points defining the curve.
+        curve_points (list[list[float]]): List of points defining the curve (first point must be repeated in last position for polygon).
 
     Returns:
-        Tuple[np.ndarray, np.ndarray]: Arrays of x (horizontal) and y (vertical up) coordinates of submerged points below y=0.
+        Tuple[np.ndarray, np.ndarray, List[Tuple[float, float]]]:
+        - Arrays of x and y coordinates of submerged points.
+        - List of tuples representing segments describing flotation (pairs of x-coordinates on the line y=0).
     """
     below_points = []
+    flotation_points = []
 
     for i in range(len(curve_points) - 1):
         p1, p2 = curve_points[i], curve_points[i + 1]
 
+        # Add submerged point if below the waterline
         if p1[1] <= 0:
             below_points.append(p1)
-        if p1[1] < 0 < p2[1] or p2[1] < 0 < p1[1]:
-            # Linear interpolation to find intersection with y=0
-            t = -p1[1] / (p2[1] - p1[1])
+        if p1[1] == 0:
+            flotation_points.append(p1[0])
+
+        # Check for intersection with the waterline
+        if (p1[1] < 0 < p2[1]) or (p2[1] < 0 < p1[1]):
+            t = -p1[1] / (
+                p2[1] - p1[1]
+            )  # Linear interpolation to find intersection with y=0
             intersect = [p1[0] + t * (p2[0] - p1[0]), 0.0]
             below_points.append(intersect)
+            flotation_points.append(intersect[0])
 
+    # Add last point if it’s below the waterline
     if curve_points:
         if curve_points[-1][1] <= 0:
             below_points.append(curve_points[-1])
+        if curve_points[-1][1] == 0:
+            flotation_points.append(curve_points[-1][0])
 
+    flotation_points = np.sort(flotation_points)
+    x_flotations = [
+        (flotation_points[2 * i], flotation_points[2 * i + 1])
+        for i in range(int(len(flotation_points) / 2))
+    ]
+
+    # Convert the list of points to numpy arrays
     if len(below_points) == 0:
-        return np.array([]), np.array([])
+        return np.array([]), np.array([]), x_flotations
     else:
         below_points = np.array(below_points)
         x, y = below_points[:, 0], below_points[:, 1]
-        return x, y
+        return x, y, x_flotations
+
+
+def compute_flotation_segments_inertia(
+    x_flotations: list[tuple[float, float]], x_center: float
+) -> float:
+    """
+    Compute inertia of the segments defining the flotation.
+    To be used in metacenter computation (the infinitesimal variation of the buoyancy for a rotation around a point is
+    given by the product of change of depth at this point (which is varying linearly) by the lever arm at this point.
+
+    Args:
+        x_flotations(list[tuple[float, float]): pairs of x coordinates describing segment at flotation [unit]
+        x_center(float): coordinates of point around which computing the inertia [unit]
+
+    Returns:
+        float: inertia of the flotation at center of rotation [unit**2]
+    """
+
+    inertia = 0
+    for xs in x_flotations:
+        inertia += np.abs((xs[0] - x_center) ** 3 / 3 - (xs[1] - x_center) ** 3 / 3)
+    return inertia
 
 
 def compute_area_and_centroid(
@@ -113,9 +155,17 @@ def compute_submerged_area_and_centroid(
     Returns:
         Tuple[float, float, float]: Area, x-coordinate of centroid, and y-coordinate of centroid.
     """
-    x, y = computed_submerged_points(curve_points)
+    x, y, x_flotations = compute_submerged_points_and_segments(curve_points)
+
     area, cx, cy = compute_area_and_centroid(x, y)
-    return area, cx, cy
+    if area > 0:
+        metacentric_radius = (
+            compute_flotation_segments_inertia(x_flotations=x_flotations, x_center=cx)
+            / area
+        )
+    else:
+        metacentric_radius = 0
+    return area, cx, cy, metacentric_radius
 
 
 def area_difference(
@@ -135,7 +185,7 @@ def area_difference(
     # Shift curve points by draft_offset
     shifted_points = [[p[0], p[1] - draft_offset] for p in curve_points]
     # Compute the area below y=0 for the shifted curve
-    area, _, _ = compute_submerged_area_and_centroid(shifted_points)
+    area, _, _, _ = compute_submerged_area_and_centroid(shifted_points)
     return area - target_area
 
 
@@ -196,6 +246,7 @@ def compute_righting_arm(
 
     Returns:
         float: the righting arm GZ [m]
+        float: the metacentric height [m]
     """
     draft_offset_equilibrium = find_draft_offset_at_vertical_equilibrium(
         target_displacement_area=target_area, curve_points=curve_points
@@ -203,11 +254,17 @@ def compute_righting_arm(
 
     # Apply the found draft_offset to compute the submerged area and centroid
     shifted_points = [[p[0], p[1] - draft_offset_equilibrium] for p in curve_points]
-    area, cx, cy = compute_submerged_area_and_centroid(shifted_points)
-    x, y = computed_submerged_points(shifted_points)
+    area, cx, cy, metacentric_radius = compute_submerged_area_and_centroid(
+        shifted_points
+    )
+    _, _, segments = compute_submerged_points_and_segments(shifted_points)
     righting_arm = (
         center_of_gravity[0] - cx
     )  # Sign convention chosen to have positive slope when stable
+
+    metacentric_height = (
+        cy + draft_offset_equilibrium + metacentric_radius - center_of_gravity[1]
+    )
 
     if plot:
         # Output results
@@ -218,8 +275,14 @@ def compute_righting_arm(
         curve_x, curve_y = zip(*shifted_points)
         plt.fill(curve_x, curve_y, color="red", alpha=0.1, edgecolor="black")
         plt.plot(curve_x, curve_y, color="black", label="Closed curve")
-
         plt.plot(cx, cy, marker="o", label="Center of buoyancy")
+        plt.plot(
+            cx,
+            cy + metacentric_radius,
+            marker="o",
+            markerfacecolor="red",
+            label="Metacenter",
+        )
         plt.plot(
             center_of_gravity[0],
             center_of_gravity[1] - draft_offset_equilibrium,
@@ -239,16 +302,21 @@ def compute_righting_arm(
         # plt.gca().set_xlim(left, right)
         # plt.gca().set_ylim(bottom, top)
         # plt.fill(x, y, color="blue", alpha=0.1, label="Submerged region")
-        plt.axhline(0, color="blue", linestyle="--", label="y=0 Line")
-        plt.legend()
+        plt.axhline(0, color="blue", linestyle="--", label="Free surface")
+        for segment in segments:
+            plt.plot(segment, [0, 0], color="red", linestyle="--", label="Flotation")
+        plt.legend(loc="center left", bbox_to_anchor=(1, 0.5))
         plt.xlabel("X [m]")
         plt.ylabel("Y [m]")
         plt.title(
             f"Vertical equilibrium.\nTarget area = {target_area}m², GZ = {righting_arm:.2f}m"
         )
+        ax = plt.gca()
+        ax.set_aspect("equal", "box")
+        plt.tight_layout()
         plt.show()
 
-    return righting_arm
+    return righting_arm, metacentric_height
 
 
 def rotate(points: list[list[float]], angle) -> list[list[float]]:
@@ -292,7 +360,7 @@ def compute_righting_arm_curve(
 
         # Step 2: find draft_offset using bisection to match the target_area
 
-        righting_arm = compute_righting_arm(
+        righting_arm, metacentric_radius = compute_righting_arm(
             curve_points=rotated_curve_points,
             target_area=target_area,
             center_of_gravity=rotated_center_of_gravity,
@@ -373,7 +441,13 @@ def find_equilibrium_points(
             guess_min, guess_max = guess_max, guess_min
         equilibrium_angle_deg = bisect(f, a=guess_min, b=guess_max)
         equilibrium_angles_deg.append(equilibrium_angle_deg)
-        if plot:
+
+    # Filter to avoid duplicate
+    equilibrium_angles_deg = mod_minus_180_180(
+        unique_angles_deg(equilibrium_angles_deg)
+    )
+    if plot:
+        for equilibrium_angle_deg in equilibrium_angles_deg:
             compute_righting_arm(
                 curve_points=rotate(curve_points, np.deg2rad(equilibrium_angle_deg)),
                 target_area=target_area,
@@ -382,7 +456,7 @@ def find_equilibrium_points(
                 )[0],
                 plot=True,
             )
-    return mod_minus_180_180(unique_angles_deg(equilibrium_angles_deg))
+    return equilibrium_angles_deg
 
 
 def unique_angles_deg(angles_deg: list[float], decimal: float = 1) -> list[float]:
